@@ -1,6 +1,6 @@
 #Kadu Farias
 from fastapi import APIRouter
-from domain.entities.Cliente import Cliente
+from domain.schemas.ClienteSchema import ClienteCreate, ClienteUpdate, ClienteResponse
 
 router = APIRouter()
 
@@ -14,11 +14,11 @@ async def get_cliente(id: int):
     return {"msg": "cliente get um executado"}
 
 @router.post("/cliente/", tags=["Cliente"], status_code=200)
-async def post_cliente(corpo: Cliente):
+async def post_cliente(corpo: ClienteCreate):
     return {"msg": "cliente post executado", "nome": corpo.nome, "cpf": corpo.cpf, "telefone": corpo.telefone}
 
 @router.put("/cliente/{id}", tags=["Cliente"], status_code=200)
-async def put_cliente(id: int, corpo: Cliente):
+async def put_cliente(id: int, corpo: ClienteUpdate):
     return {"msg": "cliente put executado", "id":id, "nome": corpo.nome, "cpf": corpo.cpf, "telefone": corpo.telefone}
 
 @router.delete("/cliente/{id}", tags=["Cliente"], status_code=200)
