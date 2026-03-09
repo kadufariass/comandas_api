@@ -7,6 +7,7 @@ GET http://localhost:8000/funcionario/10 HTTP/1.1
 ### Verbo POST – adicionar
 POST http://127.0.0.1:8000/funcionario/ HTTP/1.1
 content-type: application/json
+
 {
 "nome" : "Kadu Farias",
 "matricula" : "lu12353",
@@ -15,6 +16,7 @@ content-type: application/json
 "grupo" : 1,
 "senha" : "ee29eb4a8725678278ac4320e7"
 }
+
 ### Verbo PUT – atualiza
 PUT http://127.0.0.1:8000/funcionario/2 HTTP/1.1
 content-type: application/json

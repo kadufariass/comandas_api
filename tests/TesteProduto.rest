@@ -7,6 +7,7 @@ GET http://localhost:8000/produto/10 HTTP/1.1
 ### Verbo POST – adicionar
 POST http://127.0.0.1:8000/produto/ HTTP/1.1
 content-type: application/json
+
 {
 "nome" : "Produto Teste",
 "preco" : 50.00,
