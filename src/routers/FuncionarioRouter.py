@@ -1,6 +1,6 @@
 #Kadu Farias
 from fastapi import APIRouter
-from domain.entities.Funcionario import Funcionario
+from domain.schemas.FuncionarioSchema import FuncionarioCreate, FuncionarioUpdate, FuncionarioResponse
 
 router = APIRouter()
 
@@ -14,11 +14,11 @@ async def get_funcionario(id: int):
     return {"msg": "funcionario get um executado"}
 
 @router.post("/funcionario/", tags=["Funcionário"], status_code=200)
-async def post_funcionario(corpo: Funcionario):
+async def post_funcionario(corpo: FuncionarioCreate):
     return {"msg": "funcionario post executado", "nome": corpo.nome, "cpf": corpo.cpf, "telefone": corpo.telefone}
 
 @router.put("/funcionario/{id}", tags=["Funcionário"], status_code=200)
-async def put_funcionario(id: int, corpo: Funcionario):
+async def put_funcionario(id: int, corpo: FuncionarioUpdate):
     return {"msg": "funcionario put executado", "id":id, "nome": corpo.nome, "cpf": corpo.cpf, "telefone": corpo.telefone}
 
 @router.delete("/funcionario/{id}", tags=["Funcionário"], status_code=200)

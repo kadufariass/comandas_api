@@ -1,5 +1,6 @@
 # Kadu Farias
 from fastapi import APIRouter
+from domain.schemas.ProdutoSchema import ProdutoCreate, ProdutoUpdate, ProdutoResponse
 
 router = APIRouter()
 
@@ -13,11 +14,11 @@ async def get_produto(id: int):
     return {"msg": "produto get um executado"}
 
 @router.post("/produto/", tags=["Produto"], status_code=200)
-async def post_produto():
+async def post_produto(corpo: ProdutoCreate):
     return {"msg": "produto post executado"}
 
 @router.put("/produto/{id}", tags=["Produto"], status_code=200)
-async def put_produto(id: int):
+async def put_produto(id: int, corpo: ProdutoUpdate):
     return {"msg": "produto put executado"}
 
 @router.delete("/produto/{id}", tags=["Produto"], status_code=200)
