@@ -19,7 +19,7 @@ class FuncionarioUpdate(BaseModel):
 
 class FuncionarioResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
-    id: int
+    id_funcionario: int  # <--- Tem que ser igual ao Model
     nome: str
     matricula: str
     cpf: str

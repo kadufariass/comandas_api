@@ -5,7 +5,7 @@ from sqlalchemy import Column, VARCHAR, CHAR, Integer
 class FuncionarioDB(database.Base):
     __tablename__ = 'tb_funcionario'
 
-    id_funcionario = Column(Integer, primary_key=True, autoincrement=True, index=True)
+    id_funcionario = Column(Integer, primary_key=True, autoincrement=True, index=True) 
     nome = Column(VARCHAR(100), nullable=False)
     matricula = Column(CHAR(10), nullable=False)
     cpf = Column(CHAR(11), unique=True, nullable=False, index=True)
