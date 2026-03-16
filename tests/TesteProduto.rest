@@ -9,20 +9,19 @@ POST http://127.0.0.1:8000/produto/ HTTP/1.1
 content-type: application/json
 
 {
-"nome" : "Produto Teste",
-"preco" : 50.00,
-"descricao" : "Descrição do produto teste",
-"grupo" : 1
+"nome": "Pastel de Frango",
+"descricao": "Frango desfiado com catupiry",
+"valor_unitario": 10.50
 }
+
 ### Verbo PUT – atualiza
 PUT http://127.0.0.1:8000/produto/2 HTTP/1.1
 content-type: application/json
 
 {
-"nome" : "Produto Atualizado",
-"preco" : 100.00,
-"descricao" : "Descrição atualizada",
-"grupo" : 1
+"nome": "Pastel de Carne",
+"descricao": "Carne moída com cebola",
+"valor_unitario": 12.00
 }
 
 ### Verbo PUT – atualiza

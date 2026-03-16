@@ -4,7 +4,7 @@ from typing import Optional
 class ProdutoCreate(BaseModel):
     nome: str
     descricao: str
-    foto: bytes = None
+    foto: Optional[bytes] = None # Deixando opcional para o teste passar
     valor_unitario: float
 
 class ProdutoUpdate(BaseModel):
@@ -15,8 +15,8 @@ class ProdutoUpdate(BaseModel):
 
 class ProdutoResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
-    id: int
+    id_produto: int 
     nome: str
     descricao: str
-    foto: bytes
+    foto: Optional[bytes] = None
     valor_unitario: float

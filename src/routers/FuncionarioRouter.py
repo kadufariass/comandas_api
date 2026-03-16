@@ -9,6 +9,7 @@ FuncionarioCreate,
 FuncionarioUpdate,
 FuncionarioResponse
 )
+
 # Infra
 from infra.orm.FuncionarioModel import FuncionarioDB
 from infra.database import get_db
@@ -55,30 +56,31 @@ async def post_funcionario(funcionario_data: FuncionarioCreate, db: Session = De
         if existing_funcionario:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST, detail="Já existe um funcionário com este CPF"
+            )
+        # Cria o novo funcionário
+        novo_funcionario = FuncionarioDB(
+            id=None, # Será auto-incrementado
+            nome=funcionario_data.nome,
+            matricula=funcionario_data.matricula,
+            cpf=funcionario_data.cpf,
+            telefone=funcionario_data.telefone,
+            grupo=funcionario_data.grupo,
+            senha=funcionario_data.senha
         )
 
-    # Cria o novo funcionário
-    novo_funcionario = FuncionarioDB(
-        id=None, # Será auto-incrementado
-        nome=funcionario_data.nome,
-        matricula=funcionario_data.matricula,
-        cpf=funcionario_data.cpf,
-        telefone=funcionario_data.telefone,
-        grupo=funcionario_data.grupo,
-        senha=funcionario_data.senha
-    )
-    db.add(novo_funcionario)
-    db.commit()
-    db.refresh(novo_funcionario)
+        db.add(novo_funcionario)
+        db.commit()
+        db.refresh(novo_funcionario)
 
-    return novo_funcionario
+        return novo_funcionario
 
-except HTTPException:
+    except HTTPException:
         raise
-except Exception as e:
+    except Exception as e:
         db.rollback()
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Erro ao criar funcionário: {str(e)}"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
+            detail=f"Erro ao criar funcionário: {str(e)}"
         )
 
 @router.put("/funcionario/{id}", response_model=FuncionarioResponse, tags=["Funcionário"], status_code=status.HTTP_200_OK)

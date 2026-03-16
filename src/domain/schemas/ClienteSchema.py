@@ -13,7 +13,7 @@ class ClienteUpdate(BaseModel):
 
 class ClienteResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
-    id: int
+    id_cliente: int  # <--- Nome igual ao do Model
     nome: str
     cpf: str
     telefone: str
