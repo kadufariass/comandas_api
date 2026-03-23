@@ -13,6 +13,7 @@ from domain.schemas.FuncionarioSchema import (
 # Infra
 from infra.orm.FuncionarioModel import FuncionarioDB
 from infra.database import get_db
+from infra.security import get_password_hash
 
 router = APIRouter()
 
@@ -52,20 +53,23 @@ async def post_funcionario(funcionario_data: FuncionarioCreate, db: Session = De
     """Cria um novo funcionário"""
     try:
         existing_funcionario = db.query(FuncionarioDB).filter(FuncionarioDB.cpf == funcionario_data.cpf).first()
-        
+
         if existing_funcionario:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST, detail="Já existe um funcionário com este CPF"
-            )
+             raise HTTPException(
+                 status_code=status.HTTP_400_BAD_REQUEST, detail="Já existe um funcionário com este CPF"
+             )
+        
+        # Hash da senha (movido para dentro do try ou logo acima dele)
+        hashed_password = get_password_hash(funcionario_data.senha)
 
         novo_funcionario = FuncionarioDB(
-            id_funcionario=None, # CORREÇÃO AQUI: Nome do campo no __init__ do Model
+            id_funcionario=None,
             nome=funcionario_data.nome,
             matricula=funcionario_data.matricula,
             cpf=funcionario_data.cpf,
             telefone=funcionario_data.telefone,
             grupo=funcionario_data.grupo,
-            senha=funcionario_data.senha
+            senha=hashed_password # Usando a senha criptografada
         )
 
         db.add(novo_funcionario)
@@ -74,11 +78,9 @@ async def post_funcionario(funcionario_data: FuncionarioCreate, db: Session = De
         return novo_funcionario
 
     except Exception as e:
-        db.rollback()
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
-            detail=f"Erro ao criar funcionário: {str(e)}"
-        )
+        # Aqui você fecha o bloco try que estava aberto!
+        db.rollback() # Boa prática: desfazer mudanças se der erro
+        raise HTTPException(status_code=500, detail=f"Erro interno: {str(e)}")
 
 @router.put("/funcionario/{id}", response_model=FuncionarioResponse, tags=["Funcionário"], status_code=status.HTTP_200_OK)
 async def put_funcionario(id: int, funcionario_data: FuncionarioUpdate, db: Session = Depends(get_db)):
@@ -94,6 +96,10 @@ async def put_funcionario(id: int, funcionario_data: FuncionarioUpdate, db: Sess
             existing = db.query(FuncionarioDB).filter(FuncionarioDB.cpf == funcionario_data.cpf).first()
             if existing:
                 raise HTTPException(status_code=400, detail="CPF já cadastrado")
+
+        # Hash da senha se fornecida nova senha
+        if funcionario_data.senha:
+            funcionario_data.senha = get_password_hash(funcionario_data.senha)       
 
         update_data = funcionario_data.model_dump(exclude_unset=True)
         for field, value in update_data.items():
