@@ -9,15 +9,20 @@ from domain.schemas.ProdutoSchema import (
     ProdutoUpdate,
     ProdutoResponse
 )
+from domain.schemas.AuthSchema import FuncionarioAuth
 
 # Infra
 from infra.orm.ProdutoModel import ProdutoDB
 from infra.database import get_db
+from infra.dependencies import get_current_active_user, require_group
 
 router = APIRouter()
 
 @router.get("/produto/", response_model=List[ProdutoResponse], tags=["Produto"], status_code=status.HTTP_200_OK)
-async def get_produtos(db: Session = Depends(get_db)):
+async def get_produtos(
+    db: Session = Depends(get_db),
+    current_user: FuncionarioAuth = Depends(require_group([1]))
+):
     """Retorna todos os produtos"""
     try:
         produtos = db.query(ProdutoDB).all()
@@ -29,7 +34,11 @@ async def get_produtos(db: Session = Depends(get_db)):
         )
 
 @router.get("/produto/{id}", response_model=ProdutoResponse, tags=["Produto"], status_code=status.HTTP_200_OK)
-async def get_produto_by_id(id: int, db: Session = Depends(get_db)):
+async def get_produto_by_id(
+    id: int,
+    db: Session = Depends(get_db),
+    current_user: FuncionarioAuth = Depends(get_current_active_user)
+):
     """Retorna um produto específico pelo ID"""
     try:
         produto = db.query(ProdutoDB).filter(ProdutoDB.id_produto == id).first()
@@ -42,7 +51,11 @@ async def get_produto_by_id(id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=500, detail=f"Erro ao buscar produto: {str(e)}")
 
 @router.post("/produto/", response_model=ProdutoResponse, status_code=status.HTTP_201_CREATED, tags=["Produto"])
-async def post_produto(produto_data: ProdutoCreate, db: Session = Depends(get_db)):
+async def post_produto(
+    produto_data: ProdutoCreate,
+    db: Session = Depends(get_db),
+    current_user: FuncionarioAuth = Depends(require_group([1]))
+):
     """Cria um novo produto"""
     try:
         novo_produto = ProdutoDB(
@@ -61,7 +74,12 @@ async def post_produto(produto_data: ProdutoCreate, db: Session = Depends(get_db
         raise HTTPException(status_code=500, detail=f"Erro ao criar produto: {str(e)}")
 
 @router.put("/produto/{id}", response_model=ProdutoResponse, tags=["Produto"], status_code=status.HTTP_200_OK)
-async def put_produto(id: int, produto_data: ProdutoUpdate, db: Session = Depends(get_db)):
+async def put_produto(
+    id: int,
+    produto_data: ProdutoUpdate,
+    db: Session = Depends(get_db),
+    current_user: FuncionarioAuth = Depends(require_group([1]))
+):
     """Atualiza um produto existente"""
     try:
         produto = db.query(ProdutoDB).filter(ProdutoDB.id_produto == id).first()
@@ -83,7 +101,11 @@ async def put_produto(id: int, produto_data: ProdutoUpdate, db: Session = Depend
         raise HTTPException(status_code=500, detail=f"Erro ao atualizar produto: {str(e)}")
 
 @router.delete("/produto/{id}", status_code=status.HTTP_204_NO_CONTENT, tags=["Produto"])
-async def delete_produto(id: int, db: Session = Depends(get_db)):
+async def delete_produto(
+    id: int,
+    db: Session = Depends(get_db),
+    current_user: FuncionarioAuth = Depends(require_group([1]))
+):
     """Remove um produto"""
     try:
         produto = db.query(ProdutoDB).filter(ProdutoDB.id_produto == id).first()

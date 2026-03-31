@@ -9,16 +9,18 @@ from domain.schemas.FuncionarioSchema import (
     FuncionarioUpdate,
     FuncionarioResponse
 )
+from domain.schemas.AuthSchema import FuncionarioAuth
 
 # Infra
 from infra.orm.FuncionarioModel import FuncionarioDB
 from infra.database import get_db
 from infra.security import get_password_hash
+from infra.dependencies import get_current_active_user, require_group
 
 router = APIRouter()
 
 @router.get("/funcionario/", response_model=List[FuncionarioResponse], tags=["Funcionário"], status_code=status.HTTP_200_OK)
-async def get_funcionarios_all(db: Session = Depends(get_db)): # Mudei o nome para evitar conflito
+async def get_funcionarios_all(db: Session = Depends(get_db), current_user: FuncionarioAuth = Depends(require_group([1]))): # Mudei o nome para evitar conflito
     """Retorna todos os funcionários"""
     try:
         funcionarios = db.query(FuncionarioDB).all()
@@ -30,7 +32,7 @@ async def get_funcionarios_all(db: Session = Depends(get_db)): # Mudei o nome pa
         )   
 
 @router.get("/funcionario/{id}", response_model=FuncionarioResponse, tags=["Funcionário"], status_code=status.HTTP_200_OK)
-async def get_funcionario_by_id(id: int, db: Session = Depends(get_db)): # Mudei o nome para evitar conflito
+async def get_funcionario_by_id(id: int, db: Session = Depends(get_db), current_user: FuncionarioAuth = Depends(get_current_active_user)): # Mudei o nome para evitar conflito
     """Retorna um funcionário específico pelo ID"""
     try:
         # CORREÇÃO AQUI: De .id para .id_funcionario
@@ -49,7 +51,7 @@ async def get_funcionario_by_id(id: int, db: Session = Depends(get_db)): # Mudei
         )
 
 @router.post("/funcionario/", response_model=FuncionarioResponse, status_code=status.HTTP_201_CREATED, tags=["Funcionário"])
-async def post_funcionario(funcionario_data: FuncionarioCreate, db: Session = Depends(get_db)):
+async def post_funcionario(funcionario_data: FuncionarioCreate, db: Session = Depends(get_db), current_user: FuncionarioAuth = Depends(require_group([1]))):
     """Cria um novo funcionário"""
     try:
         existing_funcionario = db.query(FuncionarioDB).filter(FuncionarioDB.cpf == funcionario_data.cpf).first()
@@ -83,7 +85,7 @@ async def post_funcionario(funcionario_data: FuncionarioCreate, db: Session = De
         raise HTTPException(status_code=500, detail=f"Erro interno: {str(e)}")
 
 @router.put("/funcionario/{id}", response_model=FuncionarioResponse, tags=["Funcionário"], status_code=status.HTTP_200_OK)
-async def put_funcionario(id: int, funcionario_data: FuncionarioUpdate, db: Session = Depends(get_db)):
+async def put_funcionario(id: int, funcionario_data: FuncionarioUpdate, db: Session = Depends(get_db), current_user: FuncionarioAuth = Depends(require_group([1]))):
     """Atualiza um funcionário existente"""
     try:
         # CORREÇÃO AQUI: De .id para .id_funcionario
@@ -116,7 +118,7 @@ async def put_funcionario(id: int, funcionario_data: FuncionarioUpdate, db: Sess
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.delete("/funcionario/{id}", status_code=status.HTTP_204_NO_CONTENT, tags=["Funcionário"])
-async def delete_funcionario(id: int, db: Session = Depends(get_db)):
+async def delete_funcionario(id: int, db: Session = Depends(get_db), current_user: FuncionarioAuth = Depends(require_group([1]))):
     """Remove um funcionário"""
     try:
         # CORREÇÃO AQUI: De .id para .id_funcionario
