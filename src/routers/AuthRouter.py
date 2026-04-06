@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Request
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from datetime import timedelta
 
@@ -81,6 +81,15 @@ async def login(login_data: LoginRequest, db: Session = Depends(get_db)):
                 "id": funcionario.id_funcionario,
                 "grupo": funcionario.grupo,
             }
+        )
+        
+        # Registrar auditoria de login
+        AuditoriaService.registrar_acao(
+            db=db,
+            funcionario_id=funcionario.id,
+            acao="LOGIN",
+            recurso="AUTH",
+            request=request
         )
 
         return TokenResponse(
