@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.orm import Session
 from datetime import timedelta
 
@@ -18,6 +18,8 @@ from infra.security import (
     verify_refresh_token,
 )
 from infra.dependencies import get_current_active_user
+from infra.rate_limit import limiter, get_rate_limit
+from services.AuditoriaService import AuditoriaService
 
 from settings import ACCESS_TOKEN_EXPIRE_MINUTES, REFRESH_TOKEN_EXPIRE_DAYS
 
@@ -30,21 +32,17 @@ router = APIRouter()
     tags=["Autenticação"],
     summary="Login de funcionário - pública - retorna access e refresh token",
 )
-async def login(login_data: LoginRequest, db: Session = Depends(get_db)):
-    """
-    Realiza login do funcionário e retorna access token e refresh token
-
-    - cpf: CPF do funcionário
-    - senha: Senha do funcionário
-
-    Retorna:
-    - access_token: Token de curta duração (15 minutos)
-    - refresh_token: Token de longa duração (7 dias)
-    """
+@limiter.limit(get_rate_limit("critical"))
+async def login(
+    request: Request,
+    login_data: LoginRequest,
+    db: Session = Depends(get_db)
+):
     try:
-        # Busca funcionário pelo CPF
         funcionario = (
-            db.query(FuncionarioDB).filter(FuncionarioDB.cpf == login_data.cpf).first()
+            db.query(FuncionarioDB)
+            .filter(FuncionarioDB.cpf == login_data.cpf)
+            .first()
         )
 
         if not funcionario:
@@ -54,7 +52,6 @@ async def login(login_data: LoginRequest, db: Session = Depends(get_db)):
                 headers={"WWW-Authenticate": "Bearer"},
             )
 
-        # Verifica se a senha está correta
         if not verify_password(login_data.senha, funcionario.senha):
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
@@ -62,7 +59,6 @@ async def login(login_data: LoginRequest, db: Session = Depends(get_db)):
                 headers={"WWW-Authenticate": "Bearer"},
             )
 
-        # Cria o access token JWT (curta duração)
         access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
 
         access_token = create_access_token(
@@ -74,7 +70,6 @@ async def login(login_data: LoginRequest, db: Session = Depends(get_db)):
             expires_delta=access_token_expires,
         )
 
-        # Cria o refresh token JWT (longa duração)
         refresh_token = create_refresh_token(
             data={
                 "sub": funcionario.cpf,
@@ -82,11 +77,10 @@ async def login(login_data: LoginRequest, db: Session = Depends(get_db)):
                 "grupo": funcionario.grupo,
             }
         )
-        
-        # Registrar auditoria de login
+
         AuditoriaService.registrar_acao(
             db=db,
-            funcionario_id=funcionario.id,
+            funcionario_id=funcionario.id_funcionario,
             acao="LOGIN",
             recurso="AUTH",
             request=request
@@ -116,24 +110,21 @@ async def login(login_data: LoginRequest, db: Session = Depends(get_db)):
     tags=["Autenticação"],
     summary="Refresh token - pública - renova access token",
 )
+@limiter.limit(get_rate_limit("critical"))
 async def refresh_token(
-    refresh_data: RefreshTokenRequest, db: Session = Depends(get_db)
+    request: Request,
+    refresh_data: RefreshTokenRequest,
+    db: Session = Depends(get_db)
 ):
-    """
-    Renova o access token usando um refresh token válido
-
-    - refresh_token: Refresh token válido retornado no login
-
-    Retorna novo access token e refresh token
-    """
     try:
-        # Verifica e decodifica o refresh token
         payload = verify_refresh_token(refresh_data.refresh_token)
-
-        # Busca funcionário para garantir que ainda existe
         cpf = payload.get("sub")
 
-        funcionario = db.query(FuncionarioDB).filter(FuncionarioDB.cpf == cpf).first()
+        funcionario = (
+            db.query(FuncionarioDB)
+            .filter(FuncionarioDB.cpf == cpf)
+            .first()
+        )
 
         if not funcionario:
             raise HTTPException(
@@ -142,7 +133,6 @@ async def refresh_token(
                 headers={"WWW-Authenticate": "Bearer"},
             )
 
-        # Cria novo access token
         access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
 
         access_token = create_access_token(
@@ -154,13 +144,20 @@ async def refresh_token(
             expires_delta=access_token_expires,
         )
 
-        # Cria novo refresh token
         new_refresh_token = create_refresh_token(
             data={
                 "sub": funcionario.cpf,
                 "id": funcionario.id_funcionario,
                 "grupo": funcionario.grupo,
             }
+        )
+
+        AuditoriaService.registrar_acao(
+            db=db,
+            funcionario_id=funcionario.id_funcionario,
+            acao="REFRESH",
+            recurso="AUTH",
+            request=request
         )
 
         return TokenResponse(
@@ -188,24 +185,32 @@ async def refresh_token(
     tags=["Autenticação"],
     summary="Dados do usuário atual - protegida por autenticação",
 )
+@limiter.limit(get_rate_limit("moderate"))
 async def get_current_user_info(
+    request: Request,
     current_user: FuncionarioAuth = Depends(get_current_active_user),
 ):
-    """
-    Retorna informações do usuário autenticado atual
-
-    Requer header:
-    Authorization: Bearer <access_token>
-    """
     return current_user
 
 
-@router.post("/auth/logout", tags=["Autenticação"], summary="Logout - pública")
-async def logout():
-    """
-    Endpoint para logout (client-side)
+@router.post(
+    "/auth/logout",
+    tags=["Autenticação"],
+    summary="Logout - pública"
+)
+@limiter.limit(get_rate_limit("critical"))
+async def logout(
+    request: Request,
+    current_user: FuncionarioAuth = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    AuditoriaService.registrar_acao(
+        db=db,
+        funcionario_id=current_user.id,
+        acao="LOGOUT",
+        recurso="AUTH",
+        request=request
+    )
 
-    Na prática, o logout é implementado no cliente removendo os tokens.
-    Este endpoint existe apenas para completude da API.
-    """
     return {"message": "Logout realizado com sucesso"}
+    

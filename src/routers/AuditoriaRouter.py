@@ -42,7 +42,7 @@ async def listar_auditoria(
         # Construir query base com joins manuais
         query = db.query(AuditoriaDB, FuncionarioDB).join(
             FuncionarioDB,
-            FuncionarioDB.id == AuditoriaDB.funcionario_id
+            FuncionarioDB.id_funcionario == AuditoriaDB.funcionario_id
         )
 
         # Aplicar filtros
@@ -98,7 +98,7 @@ async def listar_auditoria(
                     id=auditoria.id,
                     funcionario_id=auditoria.funcionario_id,
                     funcionario={
-                        "id": funcionario.id,
+                        "id": funcionario.id_funcionario,
                         "nome": funcionario.nome,
                         "matricula": funcionario.matricula,
                         "grupo": funcionario.grupo
