@@ -2,15 +2,15 @@
 GET http://localhost:8000/cliente/ HTTP/1.1
 
 ### Verbo GET – listar um
-GET http://localhost:8000/cliente/10 HTTP/1.1
+GET http://localhost:8000/cliente/1 HTTP/1.1
 
 ### Verbo POST – adicionar
 POST http://127.0.0.1:8000/cliente/ HTTP/1.1
 content-type: application/json
 
 {
-"nome" : "Kadu Fariasss",
-"cpf" : "12345675901",
+"nome" : "Kadu Fariass",
+"cpf" : "12345675904",
 "telefone" : "123456789"
 }
 
